@@ -1,5 +1,6 @@
 FROM randaz81/r1slam:ros2
 LABEL maintainer="daniele.domenichelli@iit.it"
+LABEL maintainer="stefano.bernagozzi@iit.it"
 
 ARG username
 ARG uid
