@@ -102,6 +102,12 @@ RUN cd /home/$username/gazebo-yarp-plugins/build && \
 #     make install && \
 #     chown -R $username: /home/$username/idyntree
 
+# RUN mkdir /home/$username/robots-configuration && \
+#     git init && \
+#     git remote add ste93 https://github.com/ste93/robots-configuration.git && \
+#     git fetch --all --prune && \
+#     git checkout -b realsense ste93/realsense 
+
 # RUN mkdir  /home/$username/yarp-device-realsense2 && \
 #		cd /home/$username/yarp-device-realsense2 && \
 #		git init && \ 
@@ -115,14 +121,10 @@ RUN cd /home/$username/gazebo-yarp-plugins/build && \
 #     make -j4 && \
 #     make install && \
 #     chown -R $username: /home/$username/yarp-device-realsense2
-# RUN mkdir /home/$username/robots-configuration && \
-#     git init && \
-#     git remote add ste93 https://github.com/ste93/robots-configuration.git && \
-#     git fetch --all --prune && \
-#     git checkout -b realsense ste93/realsense 
 
-RUN mkdir /home/$username/realsense2-yarp && \ 
-    cd /home/$username/realsense2-yarp && \
+
+RUN mkdir /home/$username/yarp-device-realsense2 && \ 
+    cd /home/$username/yarp-device-realsense2 && \
     git init && \
     git remote add ste93 https://github.com/ste93/yarp-device-realsense2.git && \
     git fetch --all --prune && \
@@ -130,8 +132,9 @@ RUN mkdir /home/$username/realsense2-yarp && \
     mkdir build && \
     cd build && \
     cmake .. && \
-    make && \
-    make install 
+    make -j4 && \
+    make install && \
+    chown -R $username: /home/$username/yarp-device-realsense2
 
 RUN cd /home/$username/cer-sim && \
     git remote add randaz81 https://github.com/randaz81/cer-sim.git && \
