@@ -37,13 +37,6 @@ namespace yarp {
     void convertTimeStampYarpToRos2(const yarp::os::Stamp& yarp_stamp, 
                                     std_msgs::msg::Header& ros_stamp);
 
-/*
-    void convertImageRos2ToYarpFlexImage(sensor_msgs::msg::Image::SharedPtr ros_image, sensor_msgs::msg::CameraInfo::SharedPtr ros_camera_info, );
-    void convertImageRos2ToYarpImageOf(sensor_msgs::msg::Image::SharedPtr ros_image, sensor_msgs::msg::CameraInfo::SharedPtr ros_camera_info, );
-convertImageYarpFlexImagetoRos2
-
-    void convertImageYarpFlexImagetoRos2(sensor_msgs::msg::Image::SharedPtr ros_image, sensor_msgs::msg::CameraInfo::SharedPtr ros_camera_info, );
-*/
     void convertRGBImageRos2ToYarpFlexImage(sensor_msgs::msg::Image::SharedPtr ros_image_src,
                                             yarp::sig::FlexImage& dest);
     void convertDepthImageRos2ToYarpImageOf(sensor_msgs::msg::Image::SharedPtr ros_image_src,
@@ -57,30 +50,7 @@ convertImageYarpFlexImagetoRos2
 
     void deepCopyImageOf(const DepthImage& src, DepthImage& dest);
 
-/*
-void deepCopyImages(const yarp::sig::FlexImage& src,
-    yarp::rosmsg::sensor_msgs::Image& dest,
-    const std::string& frame_id,
-    const yarp::rosmsg::TickTime& timeStamp,
-    const unsigned int& seq);
-
-void deepCopyImages(const DepthImage& src,
-    yarp::rosmsg::sensor_msgs::Image& dest,
-    const std::string& frame_id,
-    const yarp::rosmsg::TickTime& timeStamp,
-    const unsigned int& seq);
-
-void deepCopyImagesRosToYarp(const yarp::rosmsg::sensor_msgs::Image& src,
-    yarp::sig::FlexImage& dest,
-    std::string& frame_id,
-    yarp::rosmsg::TickTime& timeStamp,
-    unsigned int& seq);
-
-void shallowCopyImages(const yarp::sig::FlexImage& src, yarp::sig::FlexImage& dest);
-
-void shallowCopyImages(const DepthImage& src, DepthImage& dest);
-*/
-} // namespace RGBDRos2ConversionUtils
+} // namespace Ros2ConversionUtils
 } // namespace dev 
 } // namespace yarp
 

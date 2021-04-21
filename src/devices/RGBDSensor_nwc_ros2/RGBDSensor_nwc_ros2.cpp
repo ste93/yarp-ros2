@@ -55,7 +55,6 @@ bool RGBDSensor_nwc_ros2::open(yarp::os::Searchable& config)
     if (config.check("depth_info_topic")) { m_topic_depth_camera_info = config.find("depth_info_topic").asString(); }
     m_verbose = config.check("verbose");
 
-
     m_subscription_rgb_image_raw = Ros2InitRGBDSensor_nwc_ros2::get().node->create_subscription<sensor_msgs::msg::Image>(m_topic_rgb_image_raw, 10, std::bind(&RGBDSensor_nwc_ros2::color_raw_callback, this, _1));
     m_subscription_rgb_camera_info = Ros2InitRGBDSensor_nwc_ros2::get().node->create_subscription<sensor_msgs::msg::CameraInfo>(m_topic_rgb_camera_info, 10, std::bind(&RGBDSensor_nwc_ros2::color_info_callback, this, _1));
     m_subscription_depth_image_raw = Ros2InitRGBDSensor_nwc_ros2::get().node->create_subscription<sensor_msgs::msg::Image>(m_topic_depth_image_raw, 10, std::bind(&RGBDSensor_nwc_ros2::depth_raw_callback, this, _1));
@@ -94,6 +93,7 @@ void RGBDSensor_nwc_ros2::depth_info_callback(const sensor_msgs::msg::CameraInfo
     saveIntrinsics(msg, depth_params);
     max_depth_height = msg->height;
     max_depth_width = msg->width;
+    yCInfo(RGBDSENSOR_NWC_ROS2) << "depth " << msg->width;
     depth_stamp_valid = true;
 }
 
@@ -111,6 +111,7 @@ void RGBDSensor_nwc_ros2::color_info_callback(const sensor_msgs::msg::CameraInfo
     saveIntrinsics(msg, rgb_params);
     max_rgb_height = msg->height;
     max_rgb_width = msg->width;
+    yCInfo(RGBDSENSOR_NWC_ROS2) << "rgb " << msg->width;
     rgb_stamp_valid = true;
 }
 
@@ -128,8 +129,9 @@ void RGBDSensor_nwc_ros2::saveIntrinsics(sensor_msgs::msg::CameraInfo::SharedPtr
             params.distortionModel.k2 == 0 && 
             params.distortionModel.k3 == 0 && 
             params.distortionModel.t1 == 0 &&
-            params.distortionModel.t2 == 0) {
-                params.distortionModel.type = yarp::sig::YarpDistortion::YARP_DISTORTION_NONE;
+            params.distortionModel.t2 == 0) 
+        {
+            params.distortionModel.type = yarp::sig::YarpDistortion::YARP_DISTORTION_NONE;
         }
         params.distortionModel.type = yarp::sig::YarpDistortion::YARP_PLUM_BOB;
         params.distortionModel.k1 = msg->d[0];
@@ -190,7 +192,6 @@ bool RGBDSensor_nwc_ros2::setRgbResolution(int width, int height)
     return false;
 }
 
-
 bool RGBDSensor_nwc_ros2::setRgbFOV(double horizontalFov, double verticalFov)
 {
     yCWarning(RGBDSENSOR_NWC_ROS2) << "setRgbFOV not supported";
@@ -220,7 +221,7 @@ bool RGBDSensor_nwc_ros2::getRgbFOV(double &horizontalFov, double &verticalFov)
         yCError(RGBDSENSOR_NWC_ROS2) << "get rgb IntrinsicParam missing information";
     }
     horizontalFov = 2 * atan(max_rgb_width / (2 * rgb_params.focalLengthX)) * 180.0 / M_PI;
-    verticalFov = 2 * atan(max_rgb_height.height() / (2 * rgb_params.focalLengthY)) * 180.0 / M_PI;
+    verticalFov = 2 * atan(max_rgb_height / (2 * rgb_params.focalLengthY)) * 180.0 / M_PI;
     return true;
 }
 
@@ -239,7 +240,8 @@ bool RGBDSensor_nwc_ros2::setRgbMirroring(bool mirror)
 
 bool RGBDSensor_nwc_ros2::getRgbIntrinsicParam(yarp::os::Property& intrinsic)
 {
-    if (rgb_stamp_valid) {
+    if (rgb_stamp_valid)
+    {
         intrinsic.clear();
         rgb_params.toProperty(intrinsic);
         return true;
@@ -268,13 +270,15 @@ bool RGBDSensor_nwc_ros2::getDepthFOV(double& horizontalFov, double& verticalFov
         return  false;
         yCError(RGBDSENSOR_NWC_ROS2) << "get depth IntrinsicParam missing information";
     }
-    horizontalFov = 2 * atan(max_rgb_width.width() / (2 * depth_params.focalLengthX)) * 180.0 / M_PI;
-    verticalFov = 2 * atan(max_rgb_height.height() / (2 * depth_params.focalLengthY)) * 180.0 / M_PI;
-    return true;}
+    horizontalFov = 2 * atan(max_rgb_width / (2 * depth_params.focalLengthX)) * 180.0 / M_PI;
+    verticalFov = 2 * atan(max_rgb_height / (2 * depth_params.focalLengthY)) * 180.0 / M_PI;
+    return true;
+}
 
 bool RGBDSensor_nwc_ros2::getDepthIntrinsicParam(yarp::os::Property& intrinsic)
 {
-    if(depth_stamp_valid) {
+    if(depth_stamp_valid) 
+    {
         intrinsic.clear();
         depth_params.toProperty(intrinsic);
         return true;
@@ -316,7 +320,7 @@ bool RGBDSensor_nwc_ros2::getExtrinsicParam(yarp::sig::Matrix& extrinsic)
 {
     yCWarning(RGBDSENSOR_NWC_ROS2) << "getExtrinsicParam not supported";
     return  false;
-};
+}
 
 
 /*
@@ -404,5 +408,5 @@ RGBDSensor_nwc_ros2::RGBDSensor_status RGBDSensor_nwc_ros2::getSensorStatus()
 std::string RGBDSensor_nwc_ros2::getLastErrorMsg(yarp::os::Stamp* timeStamp)
 {
     yCError(RGBDSENSOR_NWC_ROS2) << "get last error not yet implemented";
-    return "";
+    return "get last error not yet implemented";
 }

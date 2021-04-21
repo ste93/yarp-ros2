@@ -71,15 +71,12 @@ private:
     double max_depth_width;
     double max_depth_height;
 
-
     yarp::os::Stamp current_rgb_stamp;
     flexImage current_rgb_image;
     std::string rgb_image_frame;
     yarp::sig::IntrinsicParams rgb_params;
     double max_rgb_width;
     double max_rgb_height;
-
-
 
     bool depth_image_valid = false;
     bool depth_stamp_valid = false;
@@ -89,19 +86,24 @@ private:
 
 	// ros2 variables for topics and subscriptions
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr m_subscription_rgb_camera_info;
-    std::string                                            m_topic_rgb_camera_info;
+    std::string                                                   m_topic_rgb_camera_info;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_subscription_rgb_image_raw;
-    std::string                                            m_topic_rgb_image_raw;
+    std::string                                              m_topic_rgb_image_raw;
     
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr m_subscription_depth_camera_info;
-    std::string                                            m_topic_depth_camera_info;
+    std::string                                                   m_topic_depth_camera_info;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_subscription_depth_image_raw;
-    std::string                                            m_topic_depth_image_raw;
+    std::string                                              m_topic_depth_image_raw;
     
     // yarp variables
     int 	m_verbose{2};
-    void saveIntrinsics(sensor_msgs::msg::CameraInfo::SharedPtr msg, yarp::sig::IntrinsicParams& params);
 
+    //private functions
+    void saveIntrinsics(sensor_msgs::msg::CameraInfo::SharedPtr msg, yarp::sig::IntrinsicParams& params);
+    void depth_raw_callback(const sensor_msgs::msg::Image::SharedPtr msg);
+    void depth_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
+    void color_raw_callback(const sensor_msgs::msg::Image::SharedPtr msg);
+    void color_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
 
 public:
     RGBDSensor_nwc_ros2();
@@ -124,7 +126,7 @@ public:
     bool   getRgbSupportedConfigurations(yarp::sig::VectorOf<yarp::dev::CameraConfig> &configurations) override;
     bool   getRgbResolution(int &width, int &height) override;
     bool   setRgbResolution(int width, int height) override;
-    bool   getRgbFOV(double& horizontalFov, double& verticalFov) override{return 1;}
+    bool   getRgbFOV(double& horizontalFov, double& verticalFov) override;
     bool   setRgbFOV(double horizontalFov, double verticalFov) override;
     bool   getRgbMirroring(bool& mirror) override;
     bool   setRgbMirroring(bool mirror) override;
@@ -133,7 +135,7 @@ public:
     int    getDepthHeight() override;
     int    getDepthWidth() override;
     bool   setDepthResolution(int width, int height) override;
-    bool   getDepthFOV(double& horizontalFov, double& verticalFov) override{return 1;}
+    bool   getDepthFOV(double& horizontalFov, double& verticalFov) override;
     bool   setDepthFOV(double horizontalFov, double verticalFov) override;
     bool   getDepthIntrinsicParam(yarp::os::Property& intrinsic) override;
     double getDepthAccuracy() override;
@@ -151,15 +153,6 @@ public:
 
     yarp::dev::IRGBDSensor::RGBDSensor_status     	getSensorStatus() override;
     std::string 			                        getLastErrorMsg(yarp::os::Stamp* timeStamp = NULL) override;
-
-
-    // Inner functions
-
-    void depth_raw_callback(const sensor_msgs::msg::Image::SharedPtr msg);
-    void depth_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
-    void color_raw_callback(const sensor_msgs::msg::Image::SharedPtr msg);
-    void color_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
-
 };
 
 #endif // YARP_RGBDSENSOR_NWC_ROS2
