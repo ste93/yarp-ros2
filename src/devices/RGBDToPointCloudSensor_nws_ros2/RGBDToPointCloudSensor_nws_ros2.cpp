@@ -327,13 +327,24 @@ bool RGBDToPointCloudSensor_nws_ros2::writeData()
                 sensor_msgs::msg::PointCloud2 pc2Ros;
 
                 // filling ros header
+                // std_msgs::msg::Header headerRos;
+                //pc2Ros.header.seq = nodeSeq;
+                // double time = depthStamp.getTime();
+
                 pc2Ros.header.frame_id = rosFrameId;
+
+                yCInfo(RGBDTOPOINTCLOUDSENSOR_NWS_ROS2) << " a " << depthStamp.getTime() << " ---- " << pc2Ros.header.stamp.sec << " ---- " << pc2Ros.header.stamp.nanosec;
 
                 //pc2Ros.header.stamp.sec = depthStamp.;
                 pc2Ros.header.stamp.sec = int(depthStamp.getTime());
                 pc2Ros.header.stamp.nanosec = int(1000000 * (depthStamp.getTime() - int(depthStamp.getTime())));
+                //pc2Ros.header.stamp = rclcpp::Time(depthStamp.getTime()*1000000);
+                yCInfo(RGBDTOPOINTCLOUDSENSOR_NWS_ROS2) << " b " << depthStamp.getTime() << " ---- " << pc2Ros.header.stamp.sec << " ---- " << pc2Ros.header.stamp.nanosec;
 
+                // TODO check time header
+                //builtin_interfaces::msg::Time time;
                 // filling ros point field
+                //std::vector<sensor_msgs::msg::PointField> pointFieldRos;
                 pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
                 pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
                 pc2Ros.fields.push_back(sensor_msgs::msg::PointField());
