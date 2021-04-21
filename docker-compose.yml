@@ -22,9 +22,7 @@ x-base: &base
     - "${HOME}/.local/share/yarp:/home/user1/.local/share/yarp:rw"
     - "${HOME}/.gitconfig:/home/user1/.gitconfig"
     - ros1-volume:/home/user1/.ros
-    - /dev:/dev
   network_mode: host
-  privileged: true
   ipc: host
   pid: host
   security_opt:
@@ -63,7 +61,6 @@ services:
 # Images
   yarp-ros2-image:
     image: robotology/yarp-ros2:default
-    privileged: true
     build:
       dockerfile: Dockerfile
       context: .
@@ -86,28 +83,39 @@ services:
     command: sh -c "sleep 3 && yarp namespace $${YARP_NAMESPACE}; yarp server --ros --read"
     depends_on:
       - roscore
-      
-  #cer_rviz:
-    #<<: *base_ros1
-    #container_name: cer_rviz
-    #command: sh -c "sleep 3 && roslaunch cer_rviz cer.launch"
-    #depends_on:
-      #- roscore
-      
-  yarprobotinterface:
-    <<: *base_ros1
-    container_name: yarprobotinterface
-    # FIXME sleep
-    command: sh -c "sleep 8 && yarprobotinterface --config yarp-ros2/conf_files/robotinterface_realsense2.xml"
+
+  gazebo:
+    <<: *base_ros2
+    container_name: gazebo
+    command: sh -c "yarp wait $${YARP_NAMESPACE}; gazebo"
     depends_on:
       - roscore
       - yarp-server
 
+  yarpmotorgui:
+    <<: *base
+    container_name: yarpmotorgui
+    command: sh -c "yarp wait $${YARP_NAMESPACE}; yarp wait /SIM_CER_ROBOT/head/state:o; cd /home/user1/cer-sim/conf; yarpmotorgui --from yarpmotorgui.ini"
+    depends_on:
+      - yarp-server
+      - gazebo
+
+  cer_rviz:
+    <<: *base_ros1
+    container_name: cer_rviz
+    command: sh -c "sleep 3 && roslaunch cer_rviz cer.launch"
+    depends_on:
+      - roscore
+
+  cer_rviz2:
+    <<: *base_ros2
+    container_name: cer_rviz2
+    command: ros2 launch cer_rviz2 cer.launch
 
   terminator:
     <<: *base
     container_name: terminator
-    command: terminator -u
+    command: terminator
 
 volumes:
   ros1-volume:
