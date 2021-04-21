@@ -4,7 +4,6 @@ x-base: &base
   image: robotology/yarp-ros2:default
   environment:
     - DISPLAY=${DISPLAY}
-    - LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/ros/foxy/lib/
     - XAUTHORITY=/home/user1/.Xauthority
     - QT_X11_NO_MITSHM=1
     - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user1/1000/bus
@@ -79,8 +78,7 @@ services:
     <<: *base_ros1
     container_name: roscore
     command: roscore -v
-    
-    
+
   yarp-server:
     <<: *base
     container_name: yarp-server
@@ -88,25 +86,19 @@ services:
     command: sh -c "sleep 3 && yarp namespace $${YARP_NAMESPACE}; yarp server --ros --read"
     depends_on:
       - roscore
-
       
-  cer_rviz:
-    <<: *base_ros1
-    container_name: cer_rviz
-    command: sh -c "rviz"
-    depends_on:
-      - roscore
+  #cer_rviz:
+    #<<: *base_ros1
+    #container_name: cer_rviz
+    #command: sh -c "sleep 3 && roslaunch cer_rviz cer.launch"
+    #depends_on:
+      #- roscore
       
-  cer_rviz2:
-    <<: *base_ros2
-    container_name: cer_rviz2
-    command: sh -c "rviz2"
-
   yarprobotinterface:
-    <<: *base
+    <<: *base_ros1
     container_name: yarprobotinterface
     # FIXME sleep
-    command: sh -c "sleep 8 && yarprobotinterface --config yarp-ros2/robots-configuration/CER04/realsense2.xml"
+    command: sh -c "sleep 8 && yarprobotinterface --config yarp-ros2/conf_files/robotinterface_realsense2.xml"
     depends_on:
       - roscore
       - yarp-server
