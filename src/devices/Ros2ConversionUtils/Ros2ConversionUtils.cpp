@@ -15,10 +15,7 @@
 #include <yarp/os/Value.h>
 #include <yarp/sig/ImageUtils.h>
 
-//#include <yarp/dev/RGBDSensorParamParser.h>
-
 #include "Ros2ConversionUtils.h"
-//#include "rosPixelCode.h"
 
 using namespace yarp::dev;
 using namespace yarp::sig;
