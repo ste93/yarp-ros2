@@ -32,6 +32,34 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 
+
+/**
+ *  @ingroup dev_impl_wrapper
+ *
+ * \section RGBDSensor_nwc_ros2_device_parameters Description of input parameters
+ * This device is an nwc take a stream of data from ros2 and exposes to the user IRGBDSensor interface.
+ * See its documentation for more details about the interface.
+ *
+ *   Parameters required by this device are:
+ * | Parameter name         | SubParameter            | Type    | Units          | Default Value | Required                        | Description                                                                                         | Notes |
+ * |:----------------------:|:-----------------------:|:-------:|:--------------:|:-------------:|:------------------------------: |:---------------------------------------------------------------------------------------------------:|:-----:|
+ * | rgb_data_topic         |      -                  | string  |  -             |   -           |  no                             | ros rgb topic                                                                                       | must start with a leading '/' |
+ * | rgb_info_topic         |      -                  | string  |  -             |               |  no                             | ros rgb camera info topic                                                                           | must start with a leading '/' |
+ * | depth_data_topic       |      -                  | string  |  -             |   -           |  no                             | ros depth topic                                                                                     | must start with a leading '/' |
+ * | depth_info_topic       |      -                  | string  |  -             |   -           |  no                             | ros depth camera info topic                                                                         | must start with a leading '/' |
+ *
+ * example of configuration file:
+ *
+ * Example of configuration parameters:
+ *
+ * \code{.unparsed}
+ * device RGBDSensor_nwc_ros2
+ * rgb_data_topic /<robotName>/camera/color/image_raw
+ * rgb_info_topic /<robotName>/camera/color/camera_info
+ * depth_data_topic /<robotName>/depth/color/image_rect_raw
+ * depth_info_topic /<robotName>/depth/color/camera_info
+ * \endcode
+ */
 /**
  * This class is an utility 
  */
