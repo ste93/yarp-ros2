@@ -106,7 +106,7 @@ services:
     <<: *base
     container_name: yarprobotinterface
     # FIXME sleep
-    command: sh -c "sleep 8 && yarprobotinterface --config /home/user1/robots-configuration/CER04/realsense2.xml"
+    command: sh -c "sleep 8 && yarprobotinterface --config yarp-ros2/robots-configuration/CER04/realsense2.xml"
     depends_on:
       - roscore
       - yarp-server

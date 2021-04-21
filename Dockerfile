@@ -102,11 +102,11 @@ RUN cd /home/$username/gazebo-yarp-plugins/build && \
 #     make install && \
 #     chown -R $username: /home/$username/idyntree
 
-RUN cd /home/$username/robots-configuration && \
-     git remote add ste93 https://github.com/ste93/robots-configuration.git && \
-     git fetch --all --prune && \
-     git checkout -b test_ros2 ste93/test_ros2 && \
-     git pull ste93 test_ros2
+# RUN mkdir /home/$username/robots-configuration && \
+#     git init && \
+#     git remote add ste93 https://github.com/ste93/robots-configuration.git && \
+#     git fetch --all --prune && \
+#     git checkout -b realsense ste93/realsense 
 
 # RUN mkdir  /home/$username/yarp-device-realsense2 && \
 #		cd /home/$username/yarp-device-realsense2 && \
