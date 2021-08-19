@@ -36,7 +36,7 @@
 /**
  *  @ingroup dev_impl_wrapper
  *
- * \section RGBDSensor_nwc_ros2_device_parameters Description of input parameters
+ * \section rgbdSensor_nwc_ros2_device_parameters Description of input parameters
  * This device is an nwc take a stream of data from ros2 and exposes to the user IRGBDSensor interface.
  * See its documentation for more details about the interface.
  *
@@ -53,7 +53,7 @@
  * Example of configuration parameters:
  *
  * \code{.unparsed}
- * device RGBDSensor_nwc_ros2
+ * device rgbdSensor_nwc_ros2
  * rgb_data_topic /<robotName>/camera/color/image_raw
  * rgb_info_topic /<robotName>/camera/color/camera_info
  * depth_data_topic /<robotName>/depth/color/image_rect_raw
@@ -63,14 +63,14 @@
 /**
  * This class is an utility 
  */
-class Ros2InitRGBDSensor_nwc_ros2
+class Ros2InitRgbdSensor_nwc_ros2
 {
 public:
-    Ros2InitRGBDSensor_nwc_ros2();
+    Ros2InitRgbdSensor_nwc_ros2();
 
     std::shared_ptr<rclcpp::Node> node;
 
-    static Ros2InitRGBDSensor_nwc_ros2& get(); // do I need to make it static??
+    static Ros2InitRgbdSensor_nwc_ros2& get(); // do I need to make it static??
 };
 
 typedef yarp::sig::ImageOf<yarp::sig::PixelFloat> depthImage;
@@ -79,7 +79,7 @@ typedef yarp::sig::FlexImage flexImage;
 /**
  * This class implements an nwc for ros2 for an rgbd sensor.
  */
-class RGBDSensor_nwc_ros2:
+class RgbdSensor_nwc_ros2:
         public yarp::dev::DeviceDriver,
         public yarp::os::Thread,
         public yarp::dev::IRGBDSensor
@@ -134,12 +134,12 @@ private:
     void color_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
 
 public:
-    RGBDSensor_nwc_ros2();
-    RGBDSensor_nwc_ros2(const RGBDSensor_nwc_ros2&) = delete;
-    RGBDSensor_nwc_ros2(RGBDSensor_nwc_ros2&&) noexcept = delete;
-    RGBDSensor_nwc_ros2& operator=(const RGBDSensor_nwc_ros2&) = delete;
-    RGBDSensor_nwc_ros2& operator=(RGBDSensor_nwc_ros2&&) noexcept = delete;
-    ~RGBDSensor_nwc_ros2() override = default;
+    RgbdSensor_nwc_ros2();
+    RgbdSensor_nwc_ros2(const RgbdSensor_nwc_ros2&) = delete;
+    RgbdSensor_nwc_ros2(RgbdSensor_nwc_ros2&&) noexcept = delete;
+    RgbdSensor_nwc_ros2& operator=(const RgbdSensor_nwc_ros2&) = delete;
+    RgbdSensor_nwc_ros2& operator=(RgbdSensor_nwc_ros2&&) noexcept = delete;
+    ~RgbdSensor_nwc_ros2() override = default;
 
     // DeviceDriver
     bool open(yarp::os::Searchable& config) override;
