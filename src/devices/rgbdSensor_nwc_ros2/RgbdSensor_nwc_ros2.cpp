@@ -133,7 +133,7 @@ void RgbdSensor_nwc_ros2::saveIntrinsics(sensor_msgs::msg::CameraInfo::SharedPtr
         {
             params.distortionModel.type = yarp::sig::YarpDistortion::YARP_DISTORTION_NONE;
         }
-        params.distortionModel.type = yarp::sig::YarpDistortion::YARP_PLUM_BOB;
+        params.distortionModel.type = yarp::sig::YarpDistortion::YARP_PLUMB_BOB;
         params.distortionModel.k1 = msg->d[0];
         params.distortionModel.k2 = msg->d[1];
         params.distortionModel.t1 = msg->d[2];
