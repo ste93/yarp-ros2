@@ -27,50 +27,54 @@
 #include <mutex>
 #include <map>
 
-
+#define ROS2NODENAME "/tfNodeGet"
 #define ROS2TOPICNAME_TF "/tf"
 #define ROS2TOPICNAME_TF_STATIC "/tf_static"
 
-/*
- * \section FrameTransformSet_nwc_ros2_device_parameters Description of input parameters
+template <class Msg1PlaceHolder, class Msg2PlaceHolder>
+class DoublePublisher<Msg1PlaceHolder, Msg2PlaceHolder> : public rclcpp::Node
+{
+public:
+    DoublePublisher(std::string name, std::string topic_1="", std::string topic_2)="";
+    void publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2);
+
+private:
+    typename rclcpp::Publisher<Msg1PlaceHolder>::SharedPtr publisher_1_{nullptr};
+    typename rclcpp::Publisher<Msg2PlaceHolder>::SharedPtr publisher_2_{nullptr};
+};
+
+/**
+ * @ingroup dev_impl_nwc_ros2
+ *
+ * @brief `frameTransformSet_nwc_ros2`: A ros network wrapper client that receives frame transforms from a ros2 topic and makes them available through an IFrameTransformStorageGet interface. See \subpage FrameTransform for additional info.
+ *
+ * \section FrameTransformSet_nwc_ros2_device_parameters Parameters
  *
  *   Parameters required by this device are:
- * | Parameter name | SubParameter         | Type    | Units          | Default Valu          | Required     | Description                                                                                             |
- * |:--------------:|:--------------------:|:-------:|:--------------:|:---------------------:|:-----------: |:-------------------------------------------------------------------------------------------------------:|
- * | GENERAL        |      -               | group   | -              | -                     | No           |                                                                                                         |
- * | -              | period               | double  | seconds        | 0.01                  | No           | The PeriodicThread period in seconds                                                                    |
- * | -              | refresh_interval     | double  | seconds        | 0.1                   | No           | The time interval outside which timed fts will be deleted                                               |
- * | -              | asynch_pub           | int     | -              | 1                     | No           | If 1, the fts will be published not only every "period" seconds but also when set functions are called  |
- * | ROS2           |      -               | group   | -              | -                     | No           |                                                                                                         |
- * | -              | ft_topic             | string  | -              | /tf                   | No           | The name of the ROS2 topic on which fts will be published                                               |
- * | -              | ft_topic_static      | string  | -              | /tf_static            | No           | The name of the ROS2 topic on which static fts will be published                                        |
+ * | Parameter name | SubParameter         | Type    | Units          | Default Value         | Required     | Description                                    -------            |
+ * |:--------------:|:--------------------:|:-------:|:--------------:|:---------------------:|:-----------: |:-----------------------------------------------------------------:|
+ * | GENERAL        |      -               | group   | -              | -                     | No           |                                                                   |
+ * | -              | refresh_interval     | double  | seconds        | 0.1                   | No           | The time interval outside which timed ft will be deleted          |
+ * | ROS2           |      -               | group   | -              | -                     | No           |                                                                   |
+ * | -              | ft_node              | string  | -              | /tfNodeGet            | No           | The of the ROS2 node                                              |
+ * | -              | ft_topic             | string  | -              | /tf                   | No           | The name of the ROS2 topic from which fts will be received        |
+ * | -              | ft_topic_static      | string  | -              | /tf_static            | No           | The name of the ROS2 topic from which static fts will be received |
+
+ * **N.B.** pay attention to the difference between **tf** and **ft**
  *
- * Some example of configuration files:
- *
- * Example of configuration file using .ini format.
+ * \section FrameTransformSet_nwc_ros2_device_example Example of configuration file using .ini format.
  *
  * \code{.unparsed}
  * device frameTransformSet_nwc_ros2
  * [GENERAL]
  * period 0.05
  * refresh_interval 0.2
- * asynch_pub 1
- * [ROS2]
+ * [ROS]
  * ft_topic /tf
  * ft_topic_static /tf_static
- * ft_node /tfNode
+ * ft_node /tfNodeGet
  * \endcode
  */
-
-class Ros2Init
-{
-public:
-    Ros2Init();
-
-    std::shared_ptr<rclcpp::Node> node;
-
-    static Ros2Init& get();
-};
 
 
 class FrameTransformSet_nwc_ros2 :
@@ -99,15 +103,17 @@ public:
     void yarpTransformToROS2Transform(const yarp::math::FrameTransform &input, geometry_msgs::msg::TransformStamped& output);
 
 private:
-    mutable std::mutex                                      m_trf_mutex;
-    rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr  m_publisherFtTimed;
-    rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr  m_publisherFtStatic;
-    std::string                                             m_ftTopic{ROS2TOPICNAME_TF};
-    std::string                                             m_ftTopicStatic{ROS2TOPICNAME_TF};
-    FrameTransformContainer                                 m_ftContainer;
-    double                                                  m_period;
-    double                                                  m_refreshInterval{0.1};
-    bool                                                    m_asynchPub{true};
+    mutable std::mutex                                                  m_trf_mutex;
+    std::string                                                         m_ftNodeName{ROS2NODENAME};
+    std::string                                                         m_ftTopic{ROS2TOPICNAME_TF};
+    std::string                                                         m_ftTopicStatic{ROS2TOPICNAME_TF};
+    double                                                              m_period;
+    double                                                              m_refreshInterval{0.1};
+    bool                                                                m_asynchPub{true};
+    //rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr            m_publisherFtTimed;
+    //rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr            m_publisherFtStatic;
+    FrameTransformContainer                                             m_ftContainer;
+    DoublePublisher<tf2_msgs::msg::TFMessage,tf2_msgs::msg::TFMessage>* m_innerPublisher{nullptr};
 };
 
 #endif // YARP_DEV_FRAMETRANSFORMSETNWCROS2_H

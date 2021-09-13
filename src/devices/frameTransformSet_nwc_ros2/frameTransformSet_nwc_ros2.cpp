@@ -21,16 +21,28 @@ namespace {
 YARP_LOG_COMPONENT(FRAMETRANSFORMSETNWCROS2, "yarp.device.frameTransformSet_nwc_ros2")
 }
 
-Ros2Init::Ros2Init()
+MinimalPublisher::MinimalPublisher(std::string name, std::string topic_1, std::string topic_2)
+: Node(name)
 {
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
-    node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
+    if(topic_1 != "")
+    {
+        publisher_1_ = this->create_publisher<Msg1PlaceHolder>(topic, 10);
+    }
+    if(topic_2 != "")
+    {
+        publisher_2_ = this->create_publisher<Msg2PlaceHolder>(topic, 10);
+    }
 }
 
-Ros2Init& Ros2Init::get()
-{
-    static Ros2Init instance;
-    return instance;
+void MinimalPublisher::publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2) {
+    if(publisher_1_)
+    {
+        publisher_1_->publish(msg_1);
+    }
+    if(publisher_2_)
+    {
+        publisher_2_->publish(msg_2);
+    }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------
@@ -68,6 +80,7 @@ bool FrameTransformSet_nwc_ros2::open(yarp::os::Searchable& config)
     {
         yCInfo(FRAMETRANSFORMSETNWCROS2, "Configuring ROS2 params");
         Bottle ROS2_config = config.findGroup("ROS2");
+        if(ROS2_config.check("ft_node")) m_ftNodeName = ROS2_config.find("ft_node").asString();
         if(ROS2_config.check("ft_topic")) m_ftTopic = ROS2_config.find("ft_topic").asString();
         if(ROS2_config.check("ft_topic_static")) m_ftTopicStatic = ROS2_config.find("ft_topic_static").asString();
     }
@@ -77,8 +90,14 @@ bool FrameTransformSet_nwc_ros2::open(yarp::os::Searchable& config)
         yCWarning(FRAMETRANSFORMSETNWCROS2) << "ROS2 Group not configured";
     }
 
-    m_publisherFtTimed = Ros2Init::get().node->create_publisher<tf2_msgs::msg::TFMessage>(m_ftTopic, 10);
-    m_publisherFtStatic = Ros2Init::get().node->create_publisher<tf2_msgs::msg::TFMessage>(m_ftTopicStatic, 10);
+    //m_publisherFtTimed = Ros2Init::get().node->create_publisher<tf2_msgs::msg::TFMessage>(m_ftTopic, 10);
+    //m_publisherFtStatic = Ros2Init::get().node->create_publisher<tf2_msgs::msg::TFMessage>(m_ftTopicStatic, 10);
+
+    if(!rclcpp::ok())
+    {
+        rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
+    }
+    m_innerPublisher = new DoublePublisher<tf2_msgs::msg::TFMessage,tf2_msgs::msg::TFMessage>(m_ftNodeName, m_ftTopic, m_ftTopicStatic);
 
     start();
 
@@ -91,6 +110,11 @@ bool FrameTransformSet_nwc_ros2::close()
     if (PeriodicThread::isRunning())
     {
         PeriodicThread::stop();
+    }
+    if(m_innerPublisher)
+    {
+        delete m_innerPublisher;
+        m_innerPublisher = nullptr;
     }
     return true;
 }
@@ -206,9 +230,10 @@ bool FrameTransformSet_nwc_ros2::publishFrameTransforms()
     }
 
     toPublish_timed.transforms = content_timed;
-    m_publisherFtTimed->publish(toPublish_timed);
     toPublish_static.transforms = content_static;
-    m_publisherFtStatic->publish(toPublish_static);
+    m_innerPublisher.publish(toPublish_timed,toPublish_static);
+    //m_publisherFtTimed->publish(toPublish_timed);
+    //m_publisherFtStatic->publish(toPublish_static);
 
     return true;
 }

@@ -22,20 +22,30 @@ namespace {
 YARP_LOG_COMPONENT(FRAMETRANSFORGETNWCROS2, "yarp.device.frameTransformGet_nwc_ros2")
 }
 
-/*
-Ros2Init::Ros2Init()
+DoubleSubscriber::DoubleSubscriber(std::string name, SubPlaceHolder *inputSub, std::string topic_1, std::string topic_2) :
+    Node(name)
 {
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);/*
-    node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
+    if(topic_1 != "")
+    {
+        subscription_1_ = this->create_subscription<Msg1PlaceHolder>(
+            topic_1, 10, std::bind(&DoubleSubscriber::topic_1_callback, this, std::placeholders::_1));
+    }
+    if(topic_2!= "")
+    {
+        subscription_2_ = this->create_subscription<Msg2PlaceHolder>(
+            topic_2, 10, std::bind(&DoubleSubscriber::topic_2_callback, this, std::placeholders::_1));
+    }
+    m_subscriber = inputSub;
 }
 
-Ros2Init& Ros2Init::get()
+void DoubleSubscriber::topic_1_callback(const typename Msg1PlaceHolder::SharedPtr msg) const
 {
-    static Ros2Init instance;
-    return instance;
+    m_subscriber->local_callback_1(msg);
 }
-*/
-
+void DoubleSubscriber::topic_2_callback(const typename Msg2PlaceHolder::SharedPtr msg) const
+{
+    m_subscriber->local_callback_2(msg);
+}
 
 //------------------------------------------------------------------------------------------------------------------------------
 
@@ -114,13 +124,13 @@ bool FrameTransformGet_nwc_ros2::getTransforms(std::vector<yarp::math::FrameTran
     return true;
 }
 
-void FrameTransformGet_nwc_ros2::frameTransformTimedGet_callback(const tf2_msgs::msg::TFMessage::SharedPtr msg)
+void FrameTransformGet_nwc_ros2::local_callback_1(const tf2_msgs::msg::TFMessage::SharedPtr msg)
 {
     yCTrace(FRAMETRANSFORGETNWCROS2);
     updateBuffer(msg->transforms,false);
 }
 
-void FrameTransformGet_nwc_ros2::frameTransformStaticGet_callback(const tf2_msgs::msg::TFMessage::SharedPtr msg)
+void FrameTransformGet_nwc_ros2::local_callback_2(const tf2_msgs::msg::TFMessage::SharedPtr msg)
 {
     yCTrace(FRAMETRANSFORGETNWCROS2);
     updateBuffer(msg->transforms,true);

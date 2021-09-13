@@ -23,7 +23,7 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <std_msgs/msg/header.hpp>
-#include <frameTransformContainer.h>
+#include <FrameTransformContainer.h>
 #include <mutex>
 #include <map>
 
@@ -32,59 +32,28 @@
 #define ROS2TOPICNAME_TF_STATIC "/tf_static"
 
 
-/*
-class Ros2Init
-{
-public:
-    Ros2Init();
-
-    std::shared_ptr<rclcpp::Node> node;
-
-    static Ros2Init& get();
-};
-*/
-
 template <class SubPlaceHolder, class Msg1PlaceHolder, class Msg2PlaceHolder>
 class DoubleSubscriber : public rclcpp::Node
 {
 public:
-    DoubleSubscriber(std::string name, SubPlaceHolder *inputSub, std::string topic_1="", std::string topic_1="")
-    : Node(name)
-    {
-        if(topic_1 != "")
-        {
-            subscription_1_ = this->create_subscription<Msg1PlaceHolder>(
-                topic, 10, std::bind(&DoubleSubscriber::topic_1_callback, this, _1));
-        }
-        if(topic_2!= "")
-        {
-            subscription_2_ = this->create_subscription<Msg1PlaceHolder>(
-                topic, 10, std::bind(&DoubleSubscriber::topic_2_callback, this, _1));
-        }
-        m_subscriber = inputSub;
-    }
+    DoubleSubscriber(std::string name, SubPlaceHolder *inputSub, std::string topic_1="", std::string topic_2="");
 
 private:
-    void topic_1_callback(const Msg1PlaceHolder msg) const
-    {
-        m_subscriptionTest->local_callback_1(msg);
-    }
-    void topic_2_callback(const Msg1PlaceHolder msg) const
-    {
-        m_subscriptionTest->local_callback_2(msg);
-    }
+    void topic_1_callback(const typename Msg1PlaceHolder::SharedPtr msg) const;
+    void topic_2_callback(const typename Msg2PlaceHolder::SharedPtr msg) const;
+
     SubPlaceHolder *m_subscriber;
-    rclcpp::Subscription<Msg1PlaceHolder>::SharedPtr subscription_1_;
-    rclcpp::Subscription<Msg2PlaceHolder>::SharedPtr subscription_2_;
+    typename rclcpp::Subscription<Msg1PlaceHolder>::SharedPtr subscription_1_{nullptr};
+    typename rclcpp::Subscription<Msg2PlaceHolder>::SharedPtr subscription_2_{nullptr};
 };
 
 
 /**
- * @ingroup dev_impl_nwc_ros
+ * @ingroup dev_impl_nwc_ros2
  *
- * @brief `frameTransformGet_nwc_ros`: A ros network wrapper client that receives frame transforms from a ros topic and makes them available through an IFrameTransformStorageGet interface. See \subpage FrameTransform for additional info.
+ * @brief `frameTransformGet_nwc_ros2`: A ros network wrapper client that receives frame transforms from a ros2 topic and makes them available through an IFrameTransformStorageGet interface. See \subpage FrameTransform for additional info.
  *
- * \section FrameTransformGet_nwc_ros_device_parameters Parameters
+ * \section FrameTransformGet_nwc_ros2_device_parameters Parameters
  *
  *   Parameters required by this device are:
  * | Parameter name | SubParameter         | Type    | Units          | Default Value         | Required     | Description                                    -------            |
@@ -92,16 +61,16 @@ private:
  * | GENERAL        |      -               | group   | -              | -                     | No           |                                                                   |
  * | -              | refresh_interval     | double  | seconds        | 0.1                   | No           | The time interval outside which timed ft will be deleted          |
  * | ROS2           |      -               | group   | -              | -                     | No           |                                                                   |
- * | -              | ft_node              | string  | -              | /tfNodeGet            | No           | The of the ROS node                                               |
- * | -              | ft_topic             | string  | -              | /tf                   | No           | The name of the ROS topic from which fts will be received         |
- * | -              | ft_topic_static      | string  | -              | /tf_static            | No           | The name of the ROS topic from which static fts will be received  |
+ * | -              | ft_node              | string  | -              | /tfNodeGet            | No           | The of the ROS2 node                                              |
+ * | -              | ft_topic             | string  | -              | /tf                   | No           | The name of the ROS2 topic from which fts will be received        |
+ * | -              | ft_topic_static      | string  | -              | /tf_static            | No           | The name of the ROS2 topic from which static fts will be received |
 
  * **N.B.** pay attention to the difference between **tf** and **ft**
  *
- * \section FrameTransformGet_nwc_ros_device_example Example of configuration file using .ini format.
+ * \section FrameTransformGet_nwc_ros2_device_example Example of configuration file using .ini format.
  *
  * \code{.unparsed}
- * device frameTransformGet_nwc_yarp
+ * device frameTransformGet_nwc_ros2
  * [GENERAL]
  * period 0.05
  * refresh_interval 0.2
@@ -132,8 +101,8 @@ public:
     bool getTransforms(std::vector<yarp::math::FrameTransform>& transforms) const override;
 
     //Subscription callback
-    void frameTransformTimedGet_callback(const tf2_msgs::msg::TFMessage::SharedPtr msg);
-    void frameTransformStaticGet_callback(const tf2_msgs::msg::TFMessage::SharedPtr msg);
+    void local_callback_1(const tf2_msgs::msg::TFMessage::SharedPtr msg);
+    void local_callback_2(const tf2_msgs::msg::TFMessage::SharedPtr msg);
 
     //own
     double yarpStampFromROS2(const builtin_interfaces::msg::Time& ros2Time);
@@ -147,8 +116,8 @@ private:
     std::string                                                m_ftTopic{ROS2TOPICNAME_TF};
     std::string                                                m_ftTopicStatic{ROS2TOPICNAME_TF};
     double                                                     m_refreshInterval{0.1};
-    rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtTimed;
-    rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtStatic;
+    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtTimed;
+    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtStatic;
     FrameTransformContainer                                    m_ftContainer;
 };
 
