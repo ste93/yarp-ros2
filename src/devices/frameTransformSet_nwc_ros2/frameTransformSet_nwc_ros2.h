@@ -32,10 +32,10 @@
 #define ROS2TOPICNAME_TF_STATIC "/tf_static"
 
 template <class Msg1PlaceHolder, class Msg2PlaceHolder>
-class DoublePublisher<Msg1PlaceHolder, Msg2PlaceHolder> : public rclcpp::Node
+class DoublePublisher : public rclcpp::Node
 {
 public:
-    DoublePublisher(std::string name, std::string topic_1="", std::string topic_2)="";
+    DoublePublisher(std::string name, std::string topic_1="", std::string topic_2="");
     void publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2);
 
 private:
@@ -96,6 +96,8 @@ public:
     //IFrameTransformStorageSet interface
     bool setTransforms(const std::vector<yarp::math::FrameTransform>& transforms) override;
     bool setTransform(const yarp::math::FrameTransform& transform) override;
+    bool deleteTransform(std::string t1, std::string t2) override;
+    bool clearAll() override;
 
     //own
     bool publishFrameTransforms();

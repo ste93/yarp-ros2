@@ -22,21 +22,21 @@ YARP_LOG_COMPONENT(FRAMETRANSFORMSETNWCROS2, "yarp.device.frameTransformSet_nwc_
 }
 
 template <class Msg1PlaceHolder, class Msg2PlaceHolder>
-MinimalPublisher::MinimalPublisher(std::string name, std::string topic_1, std::string topic_2)
+DoublePublisher<Msg1PlaceHolder, Msg2PlaceHolder>::DoublePublisher(std::string name, std::string topic_1, std::string topic_2)
 : Node(name)
 {
     if(topic_1 != "")
     {
-        publisher_1_ = this->create_publisher<Msg1PlaceHolder>(topic, 10);
+        publisher_1_ = this->create_publisher<Msg1PlaceHolder>(topic_1, 10);
     }
     if(topic_2 != "")
     {
-        publisher_2_ = this->create_publisher<Msg2PlaceHolder>(topic, 10);
+        publisher_2_ = this->create_publisher<Msg2PlaceHolder>(topic_2, 10);
     }
 }
 
 template <class Msg1PlaceHolder, class Msg2PlaceHolder>
-void MinimalPublisher::publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2) {
+void DoublePublisher<Msg1PlaceHolder, Msg2PlaceHolder>::publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2) {
     if(publisher_1_)
     {
         publisher_1_->publish(msg_1);
@@ -233,9 +233,23 @@ bool FrameTransformSet_nwc_ros2::publishFrameTransforms()
 
     toPublish_timed.transforms = content_timed;
     toPublish_static.transforms = content_static;
-    m_innerPublisher.publish(toPublish_timed,toPublish_static);
+    m_innerPublisher->publish(toPublish_timed,toPublish_static);
     //m_publisherFtTimed->publish(toPublish_timed);
     //m_publisherFtStatic->publish(toPublish_static);
 
     return true;
+}
+
+bool FrameTransformSet_nwc_ros2::deleteTransform(std::string t1, std::string t2)
+{
+    // Not yet implemented
+    yCError(FRAMETRANSFORMSETNWCROS2, "deleteTransform not yet implemented");
+    return false;
+}
+
+bool FrameTransformSet_nwc_ros2::clearAll()
+{
+    // Not yet implemented
+    yCError(FRAMETRANSFORMSETNWCROS2, "clearAll not yet implemented");
+    return false;
 }
