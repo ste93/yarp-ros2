@@ -21,6 +21,7 @@ namespace {
 YARP_LOG_COMPONENT(FRAMETRANSFORMSETNWCROS2, "yarp.device.frameTransformSet_nwc_ros2")
 }
 
+template <class Msg1PlaceHolder, class Msg2PlaceHolder>
 MinimalPublisher::MinimalPublisher(std::string name, std::string topic_1, std::string topic_2)
 : Node(name)
 {
@@ -34,6 +35,7 @@ MinimalPublisher::MinimalPublisher(std::string name, std::string topic_1, std::s
     }
 }
 
+template <class Msg1PlaceHolder, class Msg2PlaceHolder>
 void MinimalPublisher::publish(Msg1PlaceHolder msg_1, Msg2PlaceHolder msg_2) {
     if(publisher_1_)
     {

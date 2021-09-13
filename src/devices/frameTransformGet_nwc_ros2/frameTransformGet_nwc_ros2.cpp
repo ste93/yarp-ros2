@@ -21,7 +21,7 @@ using namespace std::placeholders;
 namespace {
 YARP_LOG_COMPONENT(FRAMETRANSFORGETNWCROS2, "yarp.device.frameTransformGet_nwc_ros2")
 }
-
+template <class SubPlaceHolder, class Msg1PlaceHolder, class Msg2PlaceHolder>
 DoubleSubscriber::DoubleSubscriber(std::string name, SubPlaceHolder *inputSub, std::string topic_1, std::string topic_2) :
     Node(name)
 {
@@ -38,10 +38,13 @@ DoubleSubscriber::DoubleSubscriber(std::string name, SubPlaceHolder *inputSub, s
     m_subscriber = inputSub;
 }
 
+template <class Msg1PlaceHolder>
 void DoubleSubscriber::topic_1_callback(const typename Msg1PlaceHolder::SharedPtr msg) const
 {
     m_subscriber->local_callback_1(msg);
 }
+
+template <class Msg2PlaceHolder>
 void DoubleSubscriber::topic_2_callback(const typename Msg2PlaceHolder::SharedPtr msg) const
 {
     m_subscriber->local_callback_2(msg);
