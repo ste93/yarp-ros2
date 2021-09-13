@@ -22,9 +22,10 @@ namespace {
 YARP_LOG_COMPONENT(FRAMETRANSFORGETNWCROS2, "yarp.device.frameTransformGet_nwc_ros2")
 }
 
+/*
 Ros2Init::Ros2Init()
 {
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
+    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);/*
     node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
 }
 
@@ -33,6 +34,8 @@ Ros2Init& Ros2Init::get()
     static Ros2Init instance;
     return instance;
 }
+*/
+
 
 //------------------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +60,7 @@ bool FrameTransformGet_nwc_ros2::open(yarp::os::Searchable& config)
     {
         yCInfo(FRAMETRANSFORGETNWCROS2, "Configuring ROS2 params");
         Bottle ROS2_config = config.findGroup("ROS2");
+        if(ROS2_config.check("ft_node")) m_ftNodeName = ROS2_config.find("ft_node").asString();
         if(ROS2_config.check("ft_topic")) m_ftTopic = ROS2_config.find("ft_topic").asString();
         if(ROS2_config.check("ft_topic_static")) m_ftTopicStatic = ROS2_config.find("ft_topic_static").asString();
     }
@@ -66,12 +70,14 @@ bool FrameTransformGet_nwc_ros2::open(yarp::os::Searchable& config)
         yCWarning(FRAMETRANSFORGETNWCROS2) << "ROS2 Group not configured";
     }
 
+/*
     m_subscriptionFtTimed = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopic, 10,
                                                                                                 std::bind(&FrameTransformGet_nwc_ros2::frameTransformTimedGet_callback,
                                                                                                 this, _1));
     m_subscriptionFtStatic = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopicStatic, 10,
                                                                                                  std::bind(&FrameTransformGet_nwc_ros2::frameTransformStaticGet_callback,
                                                                                                  this, _1));
+*/
 
     start();
 
@@ -87,8 +93,11 @@ bool FrameTransformGet_nwc_ros2::close()
 void FrameTransformGet_nwc_ros2::run()
 {
     yCTrace(FRAMETRANSFORGETNWCROS2);
-
-    rclcpp::spin(Ros2Init::get().node);
+    if(!rclcpp::ok())
+    {
+        rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
+    }
+    rclcpp::spin(std::make_shared<DoubleSubscriber<FrameTransformGet_nwc_ros2,tf2_msgs::msg::TFMessage,tf2_msgs::msg::TFMessage>>(m_ftNodeName, this, m_ftTopic, m_ftTopicStatic));
 
     return;
 }
