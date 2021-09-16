@@ -20,7 +20,9 @@ target_sources(yarp_frameTransformGet_nwc_ros2
 )
 
 target_sources(yarp_frameTransformGet_nwc_ros2 PRIVATE $<TARGET_OBJECTS:FrameTransformUtils>)
-target_include_directories(yarp_frameTransformGet_nwc_ros2 PRIVATE $<TARGET_PROPERTY:FrameTransformUtils,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(yarp_frameTransformGet_nwc_ros2 PRIVATE
+                           $<TARGET_PROPERTY:FrameTransformUtils,INTERFACE_INCLUDE_DIRECTORIES>
+                           $<TARGET_PROPERTY:Ros2Utils,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(yarp_frameTransformGet_nwc_ros2
   PRIVATE

@@ -83,14 +83,18 @@ bool FrameTransformGet_nwc_ros2::open(yarp::os::Searchable& config)
         yCWarning(FRAMETRANSFORGETNWCROS2) << "ROS2 Group not configured";
     }
 
-/*
-    m_subscriptionFtTimed = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopic, 10,
-                                                                                                std::bind(&FrameTransformGet_nwc_ros2::frameTransformTimedGet_callback,
-                                                                                                this, _1));
-    m_subscriptionFtStatic = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopicStatic, 10,
-                                                                                                 std::bind(&FrameTransformGet_nwc_ros2::frameTransformStaticGet_callback,
-                                                                                                 this, _1));
-*/
+    m_node = std::make_shared<rclcpp::Node>(m_ftNodeName);
+    m_subscriber = new Ros2Subscriber<FrameTransformGet_nwc_ros2,tf2_msgs::msg::TFMessage>(m_node, this);
+    m_subscriber->subscribe_to_topic(m_ftTopic);
+    m_subscriber->subscribe_to_topic(m_ftTopicStatic);
+
+    // m_subscriptionFtTimed = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopic, 10,
+    //                                                                                             std::bind(&FrameTransformGet_nwc_ros2::frameTransformTimedGet_callback,
+    //                                                                                             this, _1));
+    // m_subscriptionFtStatic = Ros2Init::get().node->create_subscription<tf2_msgs::msg::TFMessage>(m_ftTopicStatic, 10,
+    //                                                                                              std::bind(&FrameTransformGet_nwc_ros2::frameTransformStaticGet_callback,
+    //                                                                                              this, _1));
+
 
     start();
 
@@ -99,6 +103,7 @@ bool FrameTransformGet_nwc_ros2::open(yarp::os::Searchable& config)
 
 bool FrameTransformGet_nwc_ros2::close()
 {
+    delete m_subscriber;
     rclcpp::shutdown();
     return true;
 }
@@ -110,7 +115,8 @@ void FrameTransformGet_nwc_ros2::run()
     {
         rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
     }
-    rclcpp::spin(std::make_shared<DoubleSubscriber<FrameTransformGet_nwc_ros2,tf2_msgs::msg::TFMessage,tf2_msgs::msg::TFMessage>>(m_ftNodeName, this, m_ftTopic, m_ftTopicStatic));
+    //rclcpp::spin(std::make_shared<DoubleSubscriber<FrameTransformGet_nwc_ros2,tf2_msgs::msg::TFMessage,tf2_msgs::msg::TFMessage>>(m_ftNodeName, this, m_ftTopic, m_ftTopicStatic));
+    rclcpp::spin(m_node);
 
     return;
 }
@@ -127,16 +133,32 @@ bool FrameTransformGet_nwc_ros2::getTransforms(std::vector<yarp::math::FrameTran
     return true;
 }
 
-void FrameTransformGet_nwc_ros2::local_callback_1(const tf2_msgs::msg::TFMessage::SharedPtr msg)
+void FrameTransformGet_nwc_ros2::sub_callback_timed(const tf2_msgs::msg::TFMessage::SharedPtr msg)
 {
     yCTrace(FRAMETRANSFORGETNWCROS2);
     updateBuffer(msg->transforms,false);
 }
 
-void FrameTransformGet_nwc_ros2::local_callback_2(const tf2_msgs::msg::TFMessage::SharedPtr msg)
+void FrameTransformGet_nwc_ros2::sub_callback_static(const tf2_msgs::msg::TFMessage::SharedPtr msg)
 {
     yCTrace(FRAMETRANSFORGETNWCROS2);
     updateBuffer(msg->transforms,true);
+}
+
+void callback(const tf2_msgs::msg::TFMessage::SharedPtr msg, std::string topic_name)
+{
+    if(topic_name == m_ftTopic)
+    {
+        sub_callback_timed(msg);
+    }
+    else if(topic_name == m_ftTopicStatic)
+    {
+        sub_callback_static(msg);
+    }
+    else
+    {
+        yCError(FRAMETRANSFORGETNWCROS2,"\"%s\" is not a supported topic",tpoic_name.c_str());
+    }
 }
 
 double FrameTransformGet_nwc_ros2::yarpStampFromROS2(const builtin_interfaces::msg::Time& ros2Time)

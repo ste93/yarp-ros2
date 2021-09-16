@@ -24,6 +24,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <FrameTransformContainer.h>
+#include <Ros2Subscriber.h>
 #include <mutex>
 #include <map>
 
@@ -101,8 +102,9 @@ public:
     bool getTransforms(std::vector<yarp::math::FrameTransform>& transforms) const override;
 
     //Subscription callback
-    void local_callback_1(const tf2_msgs::msg::TFMessage::SharedPtr msg);
-    void local_callback_2(const tf2_msgs::msg::TFMessage::SharedPtr msg);
+    void callback(const tf2_msgs::msg::TFMessage::SharedPtr msg, std::string topic_name);
+    void sub_callback_timed(const tf2_msgs::msg::TFMessage::SharedPtr msg);
+    void sub_callback_static(const tf2_msgs::msg::TFMessage::SharedPtr msg);
 
     //own
     double yarpStampFromROS2(const builtin_interfaces::msg::Time& ros2Time);
@@ -111,14 +113,16 @@ public:
     bool setTransform(const yarp::math::FrameTransform& transform);
 
 private:
-    mutable std::mutex                                         m_trf_mutex;
-    std::string                                                m_ftNodeName{ROS2NODENAME};
-    std::string                                                m_ftTopic{ROS2TOPICNAME_TF};
-    std::string                                                m_ftTopicStatic{ROS2TOPICNAME_TF};
-    double                                                     m_refreshInterval{0.1};
-    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtTimed;
-    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr  m_subscriptionFtStatic;
-    FrameTransformContainer                                    m_ftContainer;
+    mutable std::mutex                                                    m_trf_mutex;
+    std::string                                                           m_ftNodeName{ROS2NODENAME};
+    std::string                                                           m_ftTopic{ROS2TOPICNAME_TF};
+    std::string                                                           m_ftTopicStatic{ROS2TOPICNAME_TF};
+    double                                                                m_refreshInterval{0.1};
+    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr             m_subscriptionFtTimed;
+    //rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr             m_subscriptionFtStatic;
+    rclcpp::Node::SharedPtr                                               m_node;
+    FrameTransformContainer                                               m_ftContainer;
+    Ros2Subscriber<FrameTransformGet_nwc_ros2,tf2_msgs::msg::TFMessage>*  m_subscriber{nullptr};
 };
 
 #endif // YARP_DEV_FRAMETRANSFORMGETNWCROS2_H
