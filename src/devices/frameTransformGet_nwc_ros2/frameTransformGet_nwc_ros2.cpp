@@ -145,7 +145,7 @@ void FrameTransformGet_nwc_ros2::sub_callback_static(const tf2_msgs::msg::TFMess
     updateBuffer(msg->transforms,true);
 }
 
-void callback(const tf2_msgs::msg::TFMessage::SharedPtr msg, std::string topic_name)
+void FrameTransformGet_nwc_ros2::callback(const tf2_msgs::msg::TFMessage::SharedPtr msg, std::string topic_name)
 {
     if(topic_name == m_ftTopic)
     {
@@ -157,7 +157,7 @@ void callback(const tf2_msgs::msg::TFMessage::SharedPtr msg, std::string topic_n
     }
     else
     {
-        yCError(FRAMETRANSFORGETNWCROS2,"\"%s\" is not a supported topic",tpoic_name.c_str());
+        yCError(FRAMETRANSFORGETNWCROS2,"\"%s\" is not a supported topic",topic_name.c_str());
     }
 }
 

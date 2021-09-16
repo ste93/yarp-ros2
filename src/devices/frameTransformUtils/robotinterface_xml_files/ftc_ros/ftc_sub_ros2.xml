@@ -19,7 +19,7 @@
             <group name="ROS2">
                 <param extern-name="ftGet_ftTopic" name="ft_topic"> /tf </param>
                 <param extern-name="ftGet_ftTopicStatic" name="ft_topic_static"> /tf_static </param>
-                <param extern-name="ftGet_ftNode" name="ft_node"> /tfNodeGet </param>
+                <param extern-name="ftGet_ftNode" name="ft_node"> tfNodeClientGet </param>
             </group>
         </device>
         <!-- **************** STORAGE **************** -->

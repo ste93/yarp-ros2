@@ -28,7 +28,7 @@
 #include <mutex>
 #include <map>
 
-#define ROS2NODENAME "/tfNodeGet"
+#define ROS2NODENAME "tfNodeGet"
 #define ROS2TOPICNAME_TF "/tf"
 #define ROS2TOPICNAME_TF_STATIC "/tf_static"
 
