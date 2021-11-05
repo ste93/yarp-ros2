@@ -10,10 +10,11 @@
 #define _USE_MATH_DEFINES
 #endif
 
-#include "localization2D_nws_ros2.h"
+#include "Localization2D_nws_ros2.h"
 
 #include <yarp/os/LogComponent.h>
 #include <yarp/os/LogStream.h>
+#include <Ros2Utils.h>
 
 #include <cmath>
 
@@ -26,36 +27,16 @@ using namespace yarp::dev::Nav2D;
 YARP_LOG_COMPONENT(LOCALIZATION2D_NWS_ROS2, "yarp.ros2.localization2D_nws_ros2", yarp::os::Log::TraceType);
 
 
-Ros2Init::Ros2Init()
-{
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
-    node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
-}
-
-Ros2Init& Ros2Init::get()
-{
-    static Ros2Init instance;
-    return instance;
-}
-
-
 Localization2D_nws_ros2::Localization2D_nws_ros2() :
         yarp::os::PeriodicThread(0.01)
 {
 }
 
-bool Localization2D_nws_ros2::attachAll(const PolyDriverList &device2attach)
+bool Localization2D_nws_ros2::attach(yarp::dev::PolyDriver* poly)
 {
-    if (device2attach.size() != 1)
+    if (poly->isValid())
     {
-        yCError(LOCALIZATION2D_NWS_ROS2, "Cannot attach more than one device");
-        return false;
-    }
-
-    yarp::dev::PolyDriver * Idevice2attach = device2attach[0]->poly;
-    if (Idevice2attach->isValid())
-    {
-        Idevice2attach->view(m_iLoc);
+        poly->view(m_iLoc);
     }
 
     //attach the hardware device
@@ -64,33 +45,19 @@ bool Localization2D_nws_ros2::attachAll(const PolyDriverList &device2attach)
         yCError(LOCALIZATION2D_NWS_ROS2, "Subdevice passed to attach method is invalid");
         return false;
     }
-    attach(m_iLoc);
     
    return true;
 }
 
-bool Localization2D_nws_ros2::detachAll()
+bool Localization2D_nws_ros2::detach()
 {
     if (PeriodicThread::isRunning())
     {
         PeriodicThread::stop();
     }
     m_iLoc = nullptr;
+
     return true;
-}
-
-void Localization2D_nws_ros2::attach(yarp::dev::Nav2D::ILocalization2D *s)
-{
-    m_iLoc = s;
-}
-
-void Localization2D_nws_ros2::detach()
-{
-    if (PeriodicThread::isRunning())
-    {
-        PeriodicThread::stop();
-    }
-    m_iLoc = nullptr;
 }
 
 void Localization2D_nws_ros2::run()
@@ -105,7 +72,7 @@ void Localization2D_nws_ros2::run()
     if (m_iLoc!=nullptr)
     {
         bool ret = m_iLoc->getLocalizationStatus(m_current_status);
-        if (ret == false)
+        if (!ret)
         {
             yCError(LOCALIZATION2D_NWS_ROS2) << "getLocalizationStatus() failed";
         }
@@ -113,7 +80,7 @@ void Localization2D_nws_ros2::run()
         if (m_current_status == LocalizationStatusEnum::localization_status_localized_ok)
         {
             bool ret2 = m_iLoc->getCurrentPosition(m_current_position);
-            if (ret2 == false)
+            if (!ret2)
             {
                 yCError(LOCALIZATION2D_NWS_ROS2) << "getCurrentPosition() failed";
             }
@@ -122,7 +89,7 @@ void Localization2D_nws_ros2::run()
                 m_loc_stamp.update();
             }
             bool ret3 = m_iLoc->getEstimatedOdometry(m_current_odometry);
-            if (ret3 == false)
+            if (!ret3)
             {
                 //yCError(LOCALIZATION2D_NWS_ROS2) << "getEstimatedOdometry() failed";
             }
@@ -146,7 +113,6 @@ bool Localization2D_nws_ros2::open(yarp::os::Searchable &config)
     if(config.check("subdevice"))
     {
         Property       p;
-        PolyDriverList driverlist;
         p.fromString(config.toString(), false);
         p.put("device", config.find("subdevice").asString());
 
@@ -156,8 +122,7 @@ bool Localization2D_nws_ros2::open(yarp::os::Searchable &config)
             return false;
         }
 
-        driverlist.push(&m_driver, "1");
-        if(!attachAll(driverlist))
+        if(!attach(&m_driver))
         {
             yCError(LOCALIZATION2D_NWS_ROS2) << "Failed to open subdevice.. check params";
             return false;
@@ -187,18 +152,29 @@ bool Localization2D_nws_ros2::open(yarp::os::Searchable &config)
         {
             m_child_frame_id = ros_group.find("child_frame_id").asString();
         }
+
     }
     else
     {
 	}
-	
+    if (!config.check("node_name")) {
+        yCError(LOCALIZATION2D_NWS_ROS2) << "missing node_name parameter";
+        return false;
+    }
+    m_nodeName = config.find("node_name").asString();
+    if(m_nodeName[0] == '/'){
+        yCError(LOCALIZATION2D_NWS_ROS2) << "node_name cannot begin with an initial /";
+        return false;
+    }
     m_period   = config.check("period", yarp::os::Value(0.010), "Period of the thread").asFloat64();
        
     //create the topics
     const std::string m_odom_topic ="/odom";
-    const std::string m_tf_topic ="/tf";   
-    m_publisher_odom = Ros2Init::get().node->create_publisher<nav_msgs::msg::Odometry>(m_odom_topic, 10);
-    m_publisher_tf   = Ros2Init::get().node->create_publisher<tf2_msgs::msg::TFMessage>(m_tf_topic, 10);
+    const std::string m_tf_topic ="/tf";
+    m_node = NodeCreator::createNode(m_nodeName);
+
+    m_publisher_odom = m_node->create_publisher<nav_msgs::msg::Odometry>(m_odom_topic, 10);
+    m_publisher_tf   = m_node->create_publisher<tf2_msgs::msg::TFMessage>(m_tf_topic, 10);
     yCInfo(LOCALIZATION2D_NWS_ROS2, "Opened topics: %s, %s", m_odom_topic.c_str(), m_tf_topic.c_str());
         
     //start the publishig thread
@@ -219,7 +195,7 @@ void Localization2D_nws_ros2::publish_odometry_on_TF_topic()
     geometry_msgs::msg::TransformStamped tsData;
     tsData.child_frame_id = m_child_frame_id;
     tsData.header.frame_id = m_parent_frame_id;
-    tsData.header.stamp = Ros2Init::get().node->get_clock()->now();   //@@@@@@@@@@@ CHECK HERE: simulation time?
+    tsData.header.stamp = m_node->get_clock()->now();   //@@@@@@@@@@@ CHECK HERE: simulation time?
     double halfYaw = m_current_odometry.odom_theta / 180.0 * M_PI * 0.5;
     double cosYaw = cos(halfYaw);
     double sinYaw = sin(halfYaw);
@@ -248,7 +224,7 @@ void Localization2D_nws_ros2::publish_odometry_on_ROS_topic()
     nav_msgs::msg::Odometry rosData;
 
     rosData.header.frame_id = m_fixed_frame;
-    rosData.header.stamp = Ros2Init::get().node->get_clock()->now();   //@@@@@@@@@@@ CHECK HERE: simulation time?
+    rosData.header.stamp = m_node->get_clock()->now();   //@@@@@@@@@@@ CHECK HERE: simulation time?
     rosData.child_frame_id = m_robot_frame;
 
     rosData.pose.pose.position.x = m_current_odometry.odom_x;

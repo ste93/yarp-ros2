@@ -14,7 +14,7 @@ find_package(visualization_msgs REQUIRED)
 yarp_prepare_plugin(map2D_nws_ros2
   CATEGORY device
   TYPE Map2D_nws_ros2
-  INCLUDE map2D_nws_ros2.h
+  INCLUDE Map2D_nws_ros2.h
   EXTRA_CONFIG WRAPPER=map2D_nws_ros2
   INTERNAL ON
 )
@@ -23,9 +23,13 @@ yarp_add_plugin(yarp_map2D_nws_ros2)
 
 target_sources(yarp_map2D_nws_ros2
   PRIVATE
-    map2D_nws_ros2.cpp
-    map2D_nws_ros2.h
+    Map2D_nws_ros2.cpp
+    Map2D_nws_ros2.h
 )
+
+target_sources(yarp_localization2D_nws_ros2 PRIVATE $<TARGET_OBJECTS:Ros2Utils>)
+
+target_include_directories(yarp_localization2D_nws_ros2 PRIVATE $<TARGET_PROPERTY:Ros2Utils,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(yarp_map2D_nws_ros2
   PRIVATE
@@ -38,6 +42,7 @@ target_link_libraries(yarp_map2D_nws_ros2
     test_msgs::test_msgs__rosidl_typesupport_cpp
     visualization_msgs::visualization_msgs__rosidl_typesupport_cpp
     map2d_nws_ros2_msgs::map2d_nws_ros2_msgs__rosidl_typesupport_cpp
+    Ros2Utils
 )
 
 yarp_install(

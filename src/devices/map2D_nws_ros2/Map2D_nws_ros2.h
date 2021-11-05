@@ -1,19 +1,9 @@
 /*
- * Copyright (C) 2006-2020 Istituto Italiano di Tecnologia (IIT)
+ * Copyright (C) 2006-2021 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * This software may be modified and distributed under the terms of the
+ * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
 
 #ifndef YARP_DEV_MAP2D_NWS_ROS2_H
@@ -41,7 +31,7 @@
 #include <yarp/dev/Map2DLocation.h>
 #include <yarp/dev/Map2DArea.h>
 #include <yarp/dev/Map2DPath.h>
-#include <yarp/dev/IMultipleWrapper.h>
+#include <yarp/dev/WrapperSingle.h>
 #include <yarp/os/ResourceFinder.h>
 
 #include <yarp/dev/PolyDriver.h>
@@ -80,22 +70,11 @@
  * Integration with ROS2 map server is currently under development.
  */
 
-
-class Ros2Init
-{
-public:
-    Ros2Init();
-
-    std::shared_ptr<rclcpp::Node> node;
-
-    static Ros2Init& get();
-};
-
 class Map2D_nws_ros2 :
         public yarp::os::Thread,
         public yarp::dev::DeviceDriver,
         public yarp::os::PortReader,
-        public yarp::dev::IMultipleWrapper
+        public yarp::dev::WrapperSingle
 {
 public:
     Map2D_nws_ros2();
@@ -103,8 +82,8 @@ public:
     
 
     //IMultipleWrapper
-    bool attachAll(const yarp::dev::PolyDriverList& device2attach) override;
-    bool detachAll() override;
+    bool attach(yarp::dev::PolyDriver* driver) override;
+    bool detach() override;
 
     // DeviceDriver
     bool open(yarp::os::Searchable &config) override;
@@ -138,9 +117,11 @@ private:
     std::string                  m_getMapByNameName;
     std::string                  m_markersName;
     std::string                  m_currentMapName;
+    std::string                  m_nodeName;
     bool                         m_spinned;
 
     yarp::os::RpcServer                                                    m_rpcPort;
+    rclcpp::Node::SharedPtr m_node;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr     m_ros2Publisher_markers{nullptr};
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr             m_ros2Publisher_map{nullptr};
     rclcpp::Service<nav_msgs::srv::GetMap>::SharedPtr                      m_ros2Service_getMap{nullptr};

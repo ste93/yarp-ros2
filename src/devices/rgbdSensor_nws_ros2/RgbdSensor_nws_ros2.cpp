@@ -13,6 +13,8 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
+#include <Ros2Utils.h>
 
 #include <sensor_msgs/image_encodings.hpp>
 
@@ -23,6 +25,16 @@ namespace
 YARP_LOG_COMPONENT(RGBDSENSOR_NWS_ROS2, "yarp.ros2.rgbdSensor_nws_ros2", yarp::os::Log::TraceType);
 
 constexpr double DEFAULT_THREAD_PERIOD = 0.03; // s
+
+// FIXME should be possible to set different frame_id for rgb and depth
+const std::string frameId_param            = "frame_Id";
+const std::string nodeName_param           = "nodeName";
+const std::string colorTopicName_param     = "colorTopicName";
+const std::string depthTopicName_param     = "depthTopicName";
+const std::string depthInfoTopicName_param = "depthInfoTopicName";
+const std::string colorInfoTopicName_param = "colorInfoTopicName";
+
+
 
 std::string yarp2RosPixelCode(int code)
 {
@@ -66,26 +78,10 @@ std::string yarp2RosPixelCode(int code)
 } // namespace
 
 
-Ros2Init::Ros2Init()
-{
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
-    node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
-}
-
-Ros2Init& Ros2Init::get()
-{
-    static Ros2Init instance;
-    return instance;
-}
-
-
 RgbdSensor_nws_ros2::RgbdSensor_nws_ros2() :
         yarp::os::PeriodicThread(DEFAULT_THREAD_PERIOD)
 {
 }
-
-
-
 
 
 // DeviceDriver
@@ -104,7 +100,7 @@ bool RgbdSensor_nws_ros2::open(yarp::os::Searchable &config)
     }
 
     // check if we need to create subdevice or if they are
-    // passed later on through attachAll()
+    // passed later on through attach()
     if (isSubdeviceOwned && !openAndAttachSubDevice(config)) {
         yCError(RGBDSENSOR_NWS_ROS2, "Error while opening subdevice");
         return false;
@@ -129,8 +125,8 @@ bool RgbdSensor_nws_ros2::fromConfig(yarp::os::Searchable &config)
         return false;
     }
     m_node_name = config.find("node_name").asString();
-    if(m_node_name[0] != '/'){
-        yCError(RGBDSENSOR_NWS_ROS2) << "node_name must begin with an initial /";
+    if(m_node_name[0] == '/'){
+        yCError(RGBDSENSOR_NWS_ROS2) << "node_name cannot begin with an initial /";
         return false;
     }
     // FIXME node_name is not currently used.
@@ -192,21 +188,19 @@ bool RgbdSensor_nws_ros2::fromConfig(yarp::os::Searchable &config)
 
 bool RgbdSensor_nws_ros2::initialize_ROS2(yarp::os::Searchable &params)
 {
-    rosPublisher_color = Ros2Init::get().node->create_publisher<sensor_msgs::msg::Image>(m_color_topic_name, 10);
-    rosPublisher_depth = Ros2Init::get().node->create_publisher<sensor_msgs::msg::Image>(m_depth_topic_name, 10);
-    rosPublisher_colorCaminfo = Ros2Init::get().node->create_publisher<sensor_msgs::msg::CameraInfo>(m_color_info_topic_name, 10);
-    rosPublisher_depthCaminfo = Ros2Init::get().node->create_publisher<sensor_msgs::msg::CameraInfo>(m_depth_info_topic_name, 10);
+    m_node = NodeCreator::createNode(m_node_name);
+    rosPublisher_color = m_node->create_publisher<sensor_msgs::msg::Image>(m_color_topic_name, 10);
+    rosPublisher_depth = m_node->create_publisher<sensor_msgs::msg::Image>(m_depth_topic_name, 10);
+    rosPublisher_colorCaminfo = m_node->create_publisher<sensor_msgs::msg::CameraInfo>(m_color_info_topic_name, 10);
+    rosPublisher_depthCaminfo = m_node->create_publisher<sensor_msgs::msg::CameraInfo>(m_depth_info_topic_name, 10);
     return true;
 }
-
-
-
 
 
 bool RgbdSensor_nws_ros2::close()
 {
     yCTrace(RGBDSENSOR_NWS_ROS2, "Close");
-    detachAll();
+    detach();
 
     // close subdevice if it was created inside the open (--subdevice option)
     if(isSubdeviceOwned)
@@ -256,91 +250,47 @@ void RgbdSensor_nws_ros2::run()
 }
 
 
-
-
-
-
-
 /*
- * IWrapper and IMultipleWrapper interfaces
+ * WrapperSingle interface
  */
-bool RgbdSensor_nws_ros2::attachAll(const yarp::dev::PolyDriverList &device2attach)
-{
-    // First implementation only accepts devices with both the interfaces Framegrabber and IDepthSensor,
-    // on a second version maybe two different devices could be accepted, one for each interface.
-    // Yet to be defined which and how parameters shall be used in this case ... using the name of the
-    // interface to view could be a good initial guess.
-    if (device2attach.size() != 1)
-    {
-        yCError(RGBDSENSOR_NWS_ROS2, "Cannot attach more than one device");
-        return false;
-    }
-
-    yarp::dev::PolyDriver * Idevice2attach = device2attach[0]->poly;
-    if(device2attach[0]->key == "IRGBDSensor") {
-        yCInfo(RGBDSENSOR_NWS_ROS2) << "Good name!";
-    } else {
-        yCInfo(RGBDSENSOR_NWS_ROS2) << "Bad name!";
-    }
-
-    if (!Idevice2attach->isValid()) {
-        yCError(RGBDSENSOR_NWS_ROS2) << "Device " << device2attach[0]->key << " to attach to is not valid ... cannot proceed";
-        return false;
-    }
-
-    Idevice2attach->view(sensor_p);
-    Idevice2attach->view(fgCtrl);
-    if(!attach(sensor_p)) {
-        return false;
-    }
-
-    return start();
-}
-
-bool RgbdSensor_nws_ros2::detachAll()
-{
-    if (isRunning()) {
-        stop();
-    }
-
-    //check if we already instantiated a subdevice previously
-    if (isSubdeviceOwned) {
-        return false;
-    }
-
-    sensor_p = nullptr;
-    return true;
-}
-
-bool RgbdSensor_nws_ros2::attach(yarp::dev::IRGBDSensor *s)
-{
-    if(s == nullptr) {
-        yCError(RGBDSENSOR_NWS_ROS2) << "Attached device has no valid IRGBDSensor interface.";
-        return false;
-    }
-    sensor_p = s;
-
-    return start();
-}
 
 bool RgbdSensor_nws_ros2::attach(yarp::dev::PolyDriver* poly)
 {
-    if(poly) {
+    if(poly)
+    {
         poly->view(sensor_p);
         poly->view(fgCtrl);
     }
 
-    if(sensor_p == nullptr) {
+    if(sensor_p == nullptr)
+    {
         yCError(RGBDSENSOR_NWS_ROS2) << "Attached device has no valid IRGBDSensor interface.";
         return false;
     }
 
-    return start();
+    if(fgCtrl == nullptr)
+    {
+        yCWarning(RGBDSENSOR_NWS_ROS2) << "Attached device has no valid IFrameGrabberControls interface.";
+    }
+
+    return PeriodicThread::start();
 }
+
 
 bool RgbdSensor_nws_ros2::detach()
 {
+    if (yarp::os::PeriodicThread::isRunning())
+        yarp::os::PeriodicThread::stop();
+
+    //check if we already instantiated a subdevice previously
+    if (isSubdeviceOwned)
+        return false;
+
     sensor_p = nullptr;
+    if (fgCtrl)
+    {
+        fgCtrl = nullptr;
+    }
     return true;
 }
 
@@ -437,8 +387,8 @@ bool RgbdSensor_nws_ros2::setCamInfo(sensor_msgs::msg::CameraInfo& cameraInfo,
     }
 
     cameraInfo.header.frame_id      = frame_id;
-//     cameraInfo.header.stamp.sec     = static_cast<int>(stamp.getTime()); // FIXME
-//     cameraInfo.header.stamp.nanosec = static_cast<int>(1000000 * (stamp.getTime() - int(stamp.getTime()))); // FIXME
+    cameraInfo.header.stamp.sec     = static_cast<int>(stamp.getTime()); // FIXME
+    cameraInfo.header.stamp.nanosec = static_cast<int>(1000000 * (stamp.getTime() - int(stamp.getTime()))); // FIXME
     cameraInfo.width                = sensorType == COLOR_SENSOR ? sensor_p->getRgbWidth() : sensor_p->getDepthWidth();
     cameraInfo.height               = sensorType == COLOR_SENSOR ? sensor_p->getRgbHeight() : sensor_p->getDepthHeight();
     cameraInfo.distortion_model     = distModel;
@@ -476,6 +426,7 @@ bool RgbdSensor_nws_ros2::setCamInfo(sensor_msgs::msg::CameraInfo& cameraInfo,
     cameraInfo.roi.do_rectify = false;
     return true;
 }
+
 
 bool RgbdSensor_nws_ros2::writeData()
 {
@@ -517,8 +468,8 @@ bool RgbdSensor_nws_ros2::writeData()
         rColorImage.encoding = yarp2RosPixelCode(colorImage.getPixelCode());
         rColorImage.step = colorImage.getRowSize();
         rColorImage.header.frame_id = m_color_frame_id;
-//         rColorImage.header.stamp.sec = static_cast<int>(colorStamp.getTime()); // FIXME
-//         rColorImage.header.stamp.nanosec = static_cast<int>(1000000 * (colorStamp.getTime() - int(colorStamp.getTime()))); // FIXME
+        rColorImage.header.stamp.sec = static_cast<int>(colorStamp.getTime()); // FIXME
+        rColorImage.header.stamp.nanosec = static_cast<int>(1000000 * (colorStamp.getTime() - int(colorStamp.getTime()))); // FIXME
         rColorImage.is_bigendian = 0;
 
         rosPublisher_color->publish(rColorImage);
@@ -544,8 +495,8 @@ bool RgbdSensor_nws_ros2::writeData()
         rDepthImage.encoding = yarp2RosPixelCode(depthImage.getPixelCode());
         rDepthImage.step = depthImage.getRowSize();
         rDepthImage.header.frame_id = m_depth_frame_id;
-//         rDepthImage.header.stamp.sec = static_cast<int>(depthStamp.getTime()); // FIXME
-//         rDepthImage.header.stamp.nanosec = static_cast<int>(1000000 * (depthStamp.getTime() - int(depthStamp.getTime()))); // FIXME
+        rDepthImage.header.stamp.sec = static_cast<int>(depthStamp.getTime()); // FIXME
+        rDepthImage.header.stamp.nanosec = static_cast<int>(1000000 * (depthStamp.getTime() - int(depthStamp.getTime()))); // FIXME
         rDepthImage.is_bigendian = 0;
 
         rosPublisher_depth->publish(rDepthImage);

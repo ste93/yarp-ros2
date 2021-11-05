@@ -1,24 +1,20 @@
 /*
- * Copyright (C) 2006-2020 Istituto Italiano di Tecnologia (IIT)
+ * Copyright (C) 2006-2021 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * This software may be modified and distributed under the terms of the
+ * BSD-3-Clause license. See the accompanying LICENSE file for details.
  */
+
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
+
+#include "Map2D_nws_ros2.h"
 
 #include <chrono>
 #include <vector>
-#include "map2D_nws_ros2.h"
+#include <cmath>
 #include <yarp/dev/IMap2D.h>
 #include <yarp/dev/INavigation2D.h>
 #include <yarp/dev/GenericVocabs.h>
@@ -29,7 +25,7 @@
 #include <mutex>
 #include <cstdlib>
 #include <fstream>
-#include <yarp/rosmsg/impl/yarpRosHelper.h>
+#include <Ros2Utils.h>
 
 using namespace yarp::sig;
 using namespace yarp::dev;
@@ -42,17 +38,6 @@ namespace {
 YARP_LOG_COMPONENT(MAP2D_NWS_ROS2, "yarp.device.map2D_nws_ros2")
 }
 
-Ros2Init::Ros2Init()
-{
-    rclcpp::init(/*argc*/ 0, /*argv*/ nullptr);
-    node = std::make_shared<rclcpp::Node>("yarprobotinterface_node");
-}
-
-Ros2Init& Ros2Init::get()
-{
-    static Ros2Init instance;
-    return instance;
-}
 
 Map2D_nws_ros2::Map2D_nws_ros2()
 {
@@ -64,19 +49,11 @@ Map2D_nws_ros2::Map2D_nws_ros2()
     m_currentMapName = "none";
 }
 
-bool Map2D_nws_ros2::attachAll(const PolyDriverList& device2attach)
+bool Map2D_nws_ros2::attach(yarp::dev::PolyDriver* driver)
 {
-    if (device2attach.size() != 1)
+    if (driver->isValid())
     {
-        yCError(MAP2D_NWS_ROS2, "Cannot attach more than one device");
-        return false;
-    }
-
-    yarp::dev::PolyDriver* Idevice2attach = device2attach[0]->poly;
-
-    if (Idevice2attach->isValid())
-    {
-        Idevice2attach->view(m_iMap2D);
+        driver->view(m_iMap2D);
         vector<string> maps;
         m_iMap2D->get_map_names(maps);
         m_currentMapName = maps[0];
@@ -91,7 +68,7 @@ bool Map2D_nws_ros2::attachAll(const PolyDriverList& device2attach)
     return true;
 }
 
-bool Map2D_nws_ros2::detachAll()
+bool Map2D_nws_ros2::detach()
 {
     m_iMap2D = nullptr;
     return true;
@@ -115,7 +92,6 @@ bool Map2D_nws_ros2::open(yarp::os::Searchable &config)
     if (config.check("subdevice"))
     {
         Property       p;
-        PolyDriverList driverlist;
         p.fromString(config.toString(), false);
         p.put("device", config.find("subdevice").asString());
 
@@ -125,8 +101,7 @@ bool Map2D_nws_ros2::open(yarp::os::Searchable &config)
             return false;
         }
 
-        driverlist.push(&m_drv, "1");
-        if (!attachAll(driverlist))
+        if (!attach(&m_drv))
         {
             yCError(MAP2D_NWS_ROS2) << "Failed to open subdevice.. check params";
             return false;
@@ -154,11 +129,22 @@ bool Map2D_nws_ros2::open(yarp::os::Searchable &config)
         if(ROS_config.check("getmapbyname")) m_getMapByNameName = ROS_config.find("getmapbyname").asString();
         if(ROS_config.check("roscmdparser")) m_rosCmdParserName = ROS_config.find("roscmdparser").asString();
         if(ROS_config.check("markers_pub")) m_markersName = ROS_config.find("markers_pub").asString();
-        m_ros2Service_getMap = Ros2Init::get().node->create_service<nav_msgs::srv::GetMap>(m_getMapName,
+        if (!config.check("node_name")) {
+            yCError(MAP2D_NWS_ROS2) << "missing node_name parameter";
+            return false;
+        }
+        m_nodeName = config.find("node_name").asString();
+        if(m_nodeName[0] == '/'){
+            yCError(MAP2D_NWS_ROS2) << "node_name cannot begin with an initial /";
+            return false;
+        }
+        m_node = NodeCreator::createNode(m_nodeName);
+
+        m_ros2Service_getMap = m_node->create_service<nav_msgs::srv::GetMap>(m_getMapName,
                                                                                            std::bind(&Map2D_nws_ros2::getMapCallback,this,_1,_2,_3));
-        m_ros2Service_getMapByName = Ros2Init::get().node->create_service<map2d_nws_ros2_msgs::srv::GetMapByName>(m_getMapByNameName,
+        m_ros2Service_getMapByName = m_node->create_service<map2d_nws_ros2_msgs::srv::GetMapByName>(m_getMapByNameName,
                                                                                                                   std::bind(&Map2D_nws_ros2::getMapByNameCallback,this,_1,_2,_3));
-        m_ros2Service_rosCmdParser = Ros2Init::get().node->create_service<test_msgs::srv::BasicTypes>(m_rosCmdParserName,
+        m_ros2Service_rosCmdParser = m_node->create_service<test_msgs::srv::BasicTypes>(m_rosCmdParserName,
                                                                                                       std::bind(&Map2D_nws_ros2::rosCmdParserCallback,this,_1,_2,_3));
     }
     else
@@ -177,7 +163,7 @@ void Map2D_nws_ros2::run()
 {
     if(!m_spinned)  //This is just a temporary solution.
     {
-        rclcpp::spin(Ros2Init::get().node);
+        rclcpp::spin(m_node);
         m_spinned = true;
     }
 }
@@ -227,7 +213,7 @@ bool Map2D_nws_ros2::updateVizMarkers()
 {
     if (!m_ros2Publisher_markers)
     {
-        m_ros2Publisher_markers = Ros2Init::get().node->create_publisher<visualization_msgs::msg::MarkerArray>(m_markersName, 10);
+        m_ros2Publisher_markers = m_node->create_publisher<visualization_msgs::msg::MarkerArray>(m_markersName, 10);
     }
     builtin_interfaces::msg::Duration dur;
     dur.sec = 0xFFFFFFFF;
@@ -263,7 +249,7 @@ bool Map2D_nws_ros2::updateVizMarkers()
 
         rpy[0] = 0; //x
         rpy[1] = 0; //y
-        rpy[2] = loc.theta / 180 * PI; //z
+        rpy[2] = loc.theta / 180 * M_PI; //z
         yarp::sig::Matrix m = yarp::math::rpy2dcm(rpy);
         q.fromRotationMatrix(m);
 
@@ -332,7 +318,7 @@ void Map2D_nws_ros2::getMapByNameCallback(const std::shared_ptr<rmw_request_id_t
 {
     if (!m_ros2Publisher_map)
     {
-        m_ros2Publisher_map = Ros2Init::get().node->create_publisher<nav_msgs::msg::OccupancyGrid>(m_getMapByNameName+"/pub", 10);
+        m_ros2Publisher_map = m_node->create_publisher<nav_msgs::msg::OccupancyGrid>(m_getMapByNameName+"/pub", 10);
     }
     nav_msgs::msg::OccupancyGrid mapToGo;
     nav_msgs::msg::MapMetaData metaToGo;
@@ -344,12 +330,12 @@ void Map2D_nws_ros2::getMapByNameCallback(const std::shared_ptr<rmw_request_id_t
         response->map = mapToGo;
         return;
     }
-    mapToGo.info.map_load_time = Ros2Init::get().node->get_clock()->now();
-    mapToGo.header.stamp = Ros2Init::get().node->get_clock()->now();
+    mapToGo.info.map_load_time = m_node->get_clock()->now();
+    mapToGo.header.stamp = m_node->get_clock()->now();
     mapToGo.info.height = theMap.height();
     mapToGo.info.width = theMap.width();
 
-    double DEG2RAD = PI/180.0;
+    double DEG2RAD = M_PI/180.0;
     double tmp=0;
     theMap.getResolution(tmp);
     mapToGo.info.resolution=tmp;
